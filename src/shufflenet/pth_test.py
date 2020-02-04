@@ -4,13 +4,14 @@ from utils import image_normalize, input_dim_3to4
 from config import imagenet_classes
 import numpy as np
 import os
+import cv2
 from torchvision.models import shufflenet_v2_x1_0 as shufflenet
 
 model_folder = "../../models"
 
 
 class pthTester:
-    def __init__(self, img_path, to_onnx=False):
+    def __init__(self, img_path, plot_res=True, to_onnx=False):
         self.device = "cuda:0"
         self.model = shufflenet()
         self.model_name = "shufflenet.pth"
@@ -18,6 +19,8 @@ class pthTester:
         self.model.cuda()
         self.to_onnx = to_onnx
         self.input_tensor = input_dim_3to4(image_normalize(img_path))
+        self.plot = plot_res
+        self.img = cv2.imread(img_path)
 
     def __test_model(self):
         self.model.eval()
@@ -41,6 +44,12 @@ class pthTester:
             os.makedirs(dest_folder, exist_ok=True)
             torch_out = torch.onnx.export(self.model, self.input_tensor.cuda(),
                                           os.path.join(dest_folder, self.model_name.replace("pth", "onnx")), verbose=False)
+
+        if self.plot:
+            cv2.putText(self.img, imagenet_classes[idx], (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(self.img, str(output[0][idx]), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.imshow("img", self.img)
+            cv2.waitKey(0)
 
 
 if __name__ == '__main__':

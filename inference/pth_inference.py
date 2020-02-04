@@ -5,18 +5,21 @@ from config import imagenet_classes, input_size_dict
 import numpy as np
 import os
 import torchvision.models as model
+import sys
+import cv2
 
 model_folder = "../models"
 
 
 class pthInference:
-    def __init__(self, model_name):
+    def __init__(self, model_name, plot_res=True):
         self.device = "cuda:0"
         self.model_name = model_name + ".pth"
         self.model = self.__get_model(model_name)
         self.model.load_state_dict(torch.load(os.path.join(model_folder, "pth/{}".format(self.model_name))))
         self.model.cuda()
         self.size = input_size_dict[model_name]
+        self.plot = plot_res
 
     @staticmethod
     def __get_model(name):
@@ -60,10 +63,20 @@ class pthInference:
         print("Predicted classes is {}".format(imagenet_classes[idx]))
         print("The score is {}\n\n".format(output[0][idx]))
 
+        if self.plot:
+            img = cv2.imread(img_path)
+            cv2.putText(img, self.model_name, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            cv2.putText(img, imagenet_classes[idx], (10, 75), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(img, str(output[0][idx]), (10, 125), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.imshow("img", img)
+            cv2.waitKey(1500)
+
 
 if __name__ == '__main__':
     img_folder = "../image"
+    nets = ["mobilenet", "resnet18", "squeezenet"]
     image_ls = [os.path.join(img_folder, image_path) for image_path in os.listdir(img_folder)]
-    pth = pthInference("mobilenet")
-    for img in image_ls:
-        pth.predict(img)
+    for mdl in nets:
+        pth = pthInference(mdl)
+        for image in image_ls:
+            pth.predict(image)
